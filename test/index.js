@@ -1,7 +1,8 @@
 const { 
+    ResetWindowShape,
     MakeTransparentEnv, 
     ApplyTransparentFilter,
-    RunProgramInTransparentEnv 
+    RunProgramInTransparentEnv,
 } = require('lta')
 const { assert } = require('./utils.js')
 
@@ -38,6 +39,7 @@ new WebSocketServer({ port: 9898 }).on('connection', ws => {
 })
 
 // make sure all functions are exported correctly
+assert('ResetWindowShape should exist', () => !!ResetWindowShape)
 assert('MakeTransparentEnv should exist', () => !!MakeTransparentEnv)
 assert('ApplyTransparentFilter should exist', () => !!ApplyTransparentFilter)
 assert('RunProgramInTransparentEnv should exist', () => !!RunProgramInTransparentEnv)
@@ -50,15 +52,24 @@ assert('Parent window & display creation', () => {
 
     if(!ParentWindowId || !DisplayId) return
 
+    // define the color we want to make transparent
+    const TransparencyColor = '#09ff00'
+
     // Test program running in nested x environment
     assert('window id inside nested environment', () => {
         return RunProgramInTransparentEnv(
             `google-chrome-stable --no-sandbox --new-window "data:text/html,<script>${PageScript}</script>"`, 
             DisplayId, 
             ParentWindowId,
+            TransparencyColor
         )
     })
 
     // we are ready to handle requests
-    MessageCallback = () => ApplyTransparentFilter('#09ff00', ParentWindowId)
+    MessageCallback = () => {
+        console.log('message called')
+        ResetWindowShape(ParentWindowId)
+        setTimeout(() => ApplyTransparentFilter(TransparencyColor, ParentWindowId), 500)
+    }
+
 }, true)

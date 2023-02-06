@@ -92,8 +92,9 @@ extern GoInt CreateSandboxParentWindow(GoInt x, GoInt y, GoInt width, GoInt heig
 extern GoInt BindXNestedToWindow(GoInt windowId);
 extern char* GetWindowIdsByDisplayId(GoInt displayId, GoInt sleepTime);
 extern void TransformWindow(GoInt windowId, GoInt displayId);
+extern void ResetWindowShape(GoInt windowId, GoInt displayId);
 extern void CreateExcluderShape(char* C_hexColor, GoInt windowId, GoInt displayId);
-extern void LinkEventsWithChild(GoInt parentWindowId, GoInt displayId, char* C_stringChildWindowIds);
+extern void LinkEventsWithChild(GoInt parentWindowId, GoInt displayId, char* C_stringChildWindowIds, char* C_hexColor);
 
 #ifdef __cplusplus
 }

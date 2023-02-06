@@ -138,6 +138,23 @@ func TransformWindow(windowId, displayId int) {
 	C.XFlush(dpy)
 }
 
+//export ResetWindowShape
+func ResetWindowShape(windowId, displayId int) {
+	// convert display id to c_string
+	C_displayId := C.CString(fmt.Sprintf(":%d", displayId))
+	defer C.free(unsafe.Pointer(C_displayId))
+
+	// open the specific display
+	dpy := C.XOpenDisplay(C_displayId)
+
+	// reset the window shape back to it's original
+	// before we potentially remove stuff
+	// that's to not leave empty spots on the window
+	C.XShapeCombineMask(dpy, C.ulong(windowId), C.ShapeBounding, 0, 0, C.None, C.ShapeSet)
+	C.XSync(dpy, 0)
+	C.XFlush(dpy)
+}
+
 //export CreateExcluderShape
 func CreateExcluderShape(C_hexColor *C.char, windowId, displayId int) {
 	// parse the hex color to rgb values
@@ -163,11 +180,6 @@ func CreateExcluderShape(C_hexColor *C.char, windowId, displayId int) {
 	C.XGetWindowAttributes(dpy, C.ulong(windowId), &attr)
 	current_width := int(attr.width)
 	current_height := int(attr.height)
-
-	// reset the window shape back to it's original
-	// before we potentially remove stuff
-	// that's to not leave empty spots on the window
-	C.XShapeCombineMask(dpy, C.ulong(windowId), C.ShapeBounding, 0, 0, C.None, C.ShapeSet)
 
 	// init a region we're going to gradually expand
 	region := C.XCreateRegion()
@@ -210,7 +222,7 @@ func CreateExcluderShape(C_hexColor *C.char, windowId, displayId int) {
 }
 
 //export LinkEventsWithChild
-func LinkEventsWithChild(parentWindowId, displayId int, C_stringChildWindowIds *C.char) {
+func LinkEventsWithChild(parentWindowId, displayId int, C_stringChildWindowIds, C_hexColor *C.char) {
 	// open the root display where the parent window lives
 	rootDpy := C.XOpenDisplay(nil)
 
@@ -292,13 +304,20 @@ func LinkEventsWithChild(parentWindowId, displayId int, C_stringChildWindowIds *
 
 			// the window configuration changed here
 			if eventType == C.ConfigureNotify {
+				fmt.Println(`resize/move window`)
 				// xmove this window to 0,0 and resize to max width and height (aka root window size)
 				// do that for every child window specified
 				for _, childWindowId := range childWindowIds {
 					C.XMoveResizeWindow(childDpy, C.ulong(childWindowId), 0, 0, C.uint(current_width), C.uint(current_height))
 					C.XFlush(childDpy)
 				}
-			} else if eventType == C.Expose {
+
+				// we also apply the transparency mask to the parent window
+				CreateExcluderShape(C_hexColor, parentWindowId, 0)
+			}
+
+			// the window received an expose event from the window manager
+			if eventType == C.Expose {
 				fmt.Println(`refresh window`)
 				C.XFillRectangle(
 					rootDpy,
