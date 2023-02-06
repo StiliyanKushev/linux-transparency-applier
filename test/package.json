@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "lta": "file:../out/lta-1.0.0.tgz",
+    "ws": "^8.12.0"
+  }
+}
